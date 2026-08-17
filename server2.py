@@ -22,7 +22,7 @@ def typeit(widget, index, string):
             index = widget.index("%s + 1 char" % index)
             widget.after(50, typeit, widget, index, string[1:])
     
-def receive_message(display):
+def receive_message():
     while True:
         raw = conn.recv(1024)  # read up to 1024 bytes; larger messages require multiple recv() calls
         if not raw:
@@ -55,15 +55,15 @@ info = Label(content, text=f"Connected to: {host}")
 info.pack()
 
 display = Text(content, height=15, width=50)
-display.pack()
+display.pack(fill="both", expand=True, padx=10, pady=(10, 5))
 
 entry = Entry(content, textvariable=user_entry)
-entry.pack(side=LEFT, padx=50, pady=5)
+entry.pack(side=LEFT, fill="x", expand=True, padx=10, pady=(10, 5))
 
 send_button = Button(content, command=lambda: submit(user_entry), text="Send", width=10)
-send_button.pack(side=RIGHT, padx=50, pady=5)
+send_button.pack(side=RIGHT, padx=10, pady=(10, 5))
 
-loop_thread = Thread(target=receive_message, args=(display,), daemon=True)
+loop_thread = Thread(target=receive_message, daemon=True)
 loop_thread.start()
 
 root.bind("<Return>", lambda event: submit(user_entry))

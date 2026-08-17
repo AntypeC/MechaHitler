@@ -1,6 +1,11 @@
 import socket
+from gpt4all import GPT4All
+import os
 
-# https://www.digitalocean.com/community/tutorials/python-socket-programming-server-client
+script_dir = os.path.dirname(os.path.abspath(__file__))
+model_path = os.path.join(script_dir, "Llama-3.2-3B-Instruct-abliterated.Q4_K_M.gguf")
+
+model = GPT4All(model_path, allow_download=False) # downloads / loads a 4.66GB LLM
 
 def server_program():
     host = '127.0.0.1'  # loopback address for local testing
@@ -22,9 +27,12 @@ def server_program():
         except UnicodeDecodeError:
             print(f"Received non-UTF-8 data from {address}, skipping")
             continue
-        print("from connected user: " + str(data))
-        data = input(' -> ')
-        conn.sendall(data.encode())  # send data to the client
+        user_entry = str(data)
+        print("from connected user: " + user_entry)
+        with model.chat_session():
+            response = model.generate(user_entry, max_tokens=50)
+            print(" -> "+ response)
+        conn.sendall(response.encode())  # send data to the client
 
     conn.close()  # close the connection
     server_socket.close()  # close the listening socket
@@ -32,3 +40,5 @@ def server_program():
 
 if __name__ == '__main__':
     server_program()
+
+# modest, cute, grateful, nostalgic, feminine

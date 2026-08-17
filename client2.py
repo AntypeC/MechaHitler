@@ -41,19 +41,19 @@ root = Tk()
 root.geometry('500x350')
 user_entry = StringVar(value="")
 
-content = Frame(root, width=150)
+content = Frame(root)
 content.pack()
 name = Label(content, text="Chatroom")
 name.pack()
 
 display = Text(content, height=15, width=50)
-display.pack()
+display.pack(fill="both", expand=True, padx=10, pady=(10, 5))
 
 entry = Entry(content, textvariable=user_entry)
-entry.pack(side=LEFT, padx=50, pady=5)
+entry.pack(side=LEFT, fill="x", expand=True, padx=10, pady=(10, 5))
 
 send_button = Button(content, command=lambda: submit(user_entry), text="Send", width=10)
-send_button.pack(side=RIGHT, padx=50, pady=5)
+send_button.pack(side=RIGHT, padx=10, pady=(10, 5))
 
 loop_thread = Thread(target=receive_message, daemon=True)
 loop_thread.start()

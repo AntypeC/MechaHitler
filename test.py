@@ -1,85 +1,64 @@
-from tkinter import *
-import socket
+import random
 
-host = '127.0.0.1'
-# port = 5000
+# import torch
+# from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-# client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# client_socket.connect((host, port))
+# # Load the pre-trained model and tokenizer
+# model = AutoModelForSequenceClassification.from_pretrained("bert-base-uncased")
+# tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
 
-# def receive_message(display):
-#     while True:
-#         raw = client_socket.recv(1024)
-#         if not raw:
-#             print("")
-#         data = raw.decode('utf-8')
-#         print(data)
-#         display.insert(END, data+"\n")
+# # Prepare your input data (e.g., text samples)
+# input_ids = ...
+# attention_masks = ...
 
-def submit(user_entry, entry, display):
-    message = user_entry.get()
-    entry.delete(0, END)
-    message = message.lower().strip()
-    display.insert(END, message+"\n")
-    # client_socket.sendall(message.encode())
+# # Run inference on the LLM model
+# outputs = model(input_ids, attention_mask=attention_masks)
 
-def client_program():
-    root = Tk()
-    root.geometry('500x350')
-    user_entry = StringVar(value="")
+# print(outputs)
 
-    content = Frame(root, width=150)
-    content.pack()
-    name = Label(content, text="Chatroom")
-    name.pack()
-    info = Label(content, text=f"Connected to: {host}")
-    info.pack()
+guess_count = 10
+words = ["hello", "python", "energy", "apple", "screw", "you"]
+selected_word = random.choice(words)
+letter = ""
 
-    display = Text(content, height=15, width=50)
-    display.pack()
+display = ""
 
-    entry = Entry(content, textvariable=user_entry)
-    entry.pack(side=LEFT, padx=50, pady=5)
+for i in range(len(selected_word)):
+    display += "_"
 
-    send_button = Button(content, command=lambda: submit(user_entry, entry, display), text="Send", width=10)
-    send_button.pack(side=RIGHT, padx=50, pady=5)
+print(f"Word: {" ".join(display)}")
 
-    worker_thread = 
-    root.mainloop()
+while display != selected_word and guess_count != 0:
+    print(f"Guesses remaining: " + str(guess_count))
+    while True:
+        letter = input(f"Guess a letter: ").lower()
+        if letter in list(display):
+            print("You already guessed this letter, try again.")
+        else:
+            break
 
-if __name__ == '__main__':
-    client_program()
+    count = 0
+    for elem in list(selected_word):
+        if letter == elem:
+            new_display = display[:count] + letter + display[count+1:]
+            display = new_display
+        count += 1
+    print("Word:", " ".join(display))
+    guess_count -= 1
 
-# print('Elliot\'s favourite quote is "hello"')
-# print("antype", end="$")
-# print(32, end="")
+if display == selected_word:
+    print("You win!")
+else:
+    print("You lost!")
+    print(f"The word was {selected_word}.")
 
-# name = "antype"
-# age = 20
-# print(name, age, "hello", 10, sep=". ", end=".\n")
-# print(name + ". " + str(age))
 
-# variable = 2.6322442
-# print(f"text, {variable:%<6.4f}")
-
-# weight = 82.4324
-# print(f'the weight is: {weight:.1f}kg')
-
-# temp = 7
-# temp2 = 14
-# print(f"The temperature is: {temp:2d}")
-# print(f"The temperature is: {temp2:1d}")
-
-# c1 = 'Auckland'
-# c2 = 'Sydney'
-# c3 = 'Toronto'
-# t1 = 17.5
-# t2 = 25
-# t3 = 3
-# print(f'The temperature in {c1:>8s} is {int(t1):4d}')
-# print(f'The temperature in {c2:>8s} is {t2:>4.1f}')
-# print(f'The temperature in {c3:>8s} is {t3:>4.1f}')
-
-# value = 6 == 6 or 5 > 4
-# value2 = 3 > 9 and 2 == 2
-# print(not value and value or value2)
+# dog_food = 3
+# cat_food = 2
+# parrot_food = 1
+# total_food = dog_food + cat_food + parrot_food
+# total_food = total_food * 7
+# message = "total food needed per week is: " + str(total_food) + " kilograms."
+# message_2 = "thats enough "+str(dog_food)+" "+str(cat_food)+", and" + str(parrot_food) + "!"
+# print(message)
+# print(message_2)

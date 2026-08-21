@@ -78,6 +78,7 @@ insert_image.pack(side="right")
 
 chat_container = Text(top_frame, height=25, width=120)
 chat_container.configure(state="disabled")
+chat_container.see("end")
 chat_container.pack(side="left", fill="both", expand=True, padx=10, pady=(5, 5))
 
 entry = Entry(bottom_frame, textvariable=user_entry)

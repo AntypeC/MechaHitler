@@ -2,3 +2,4 @@
 *.gguf
 gpt-4chan/
 Llama-3.2-3B-Instruct/
+.mypy_cache/

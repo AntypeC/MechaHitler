@@ -1,8 +1,0 @@
-# ctrl + alt + i
-library(tidyverse)
-iris
-ggplot(iris, aes(x = Sepal.Length, y = Sepal.Width)) + geom_point()
-
-str(iris)
-
-ggplot(iris, aes(x = Sepal.Length, y = Sepal.Width)) + geom_point()

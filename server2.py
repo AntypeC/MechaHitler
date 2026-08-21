@@ -33,18 +33,18 @@ def receive_message():
             print(f"Received non-UTF-8 data from {address}, skipping")
             continue
         print("from connected user: " + str(data))
-        display.insert(END, "User 1: ")
+        display.insert(END, "Regular Goy: ")
         typeit(display, "end", data+"\n")
 
 def submit(user_entry):
     message = user_entry.get()
     entry.delete(0, END)
     message = message.lower().strip()
-    display.insert(END, "User 2: "+message+"\n")
+    display.insert(END, "You: "+message+"\n")
     conn.sendall(message.encode())  # send data to the client
 
 root = Tk()
-root.geometry('500x350')
+root.geometry('1000x650')
 user_entry = StringVar(value="")
 
 content = Frame(root, width=150)
@@ -54,7 +54,7 @@ name.pack()
 info = Label(content, text=f"Connected to: {host}")
 info.pack()
 
-display = Text(content, height=15, width=50)
+display = Text(content, height=32, width=120)
 display.pack(fill="both", expand=True, padx=10, pady=(10, 5))
 
 entry = Entry(content, textvariable=user_entry)

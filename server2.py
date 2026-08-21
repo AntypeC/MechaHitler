@@ -10,7 +10,6 @@ port = 5000
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # IPv4 TCP socket
 server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # allow port reuse immediately after server shutdown
 server_socket.bind((host, port))  # bind host address and port together
-
 server_socket.listen(5)  # queue up to 5 connection requests
 conn, address = server_socket.accept()  # accept new connection
 print("Connection from: " + str(address))

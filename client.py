@@ -5,7 +5,7 @@ from threading import Thread
 from PIL import Image, ImageTk
 # from tkinterdnd2 import DND_FILES, TkinterDnD
 import imageio
-import os, queue, time
+import os, queue
 import pyttsx3
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -31,9 +31,29 @@ image_generator = video.iter_data()
 count = 0
 speech_length_ticks = 0
 
-def update_frame():
+# if you want to manually adjust the speed of the video playback
+# def update_frame():
+#     global image_generator, count
+#     for i in range(round(speech_length_ticks)):
+#         try:
+#             image = next(image_generator)
+#             store_frame.put(image)
+#         except StopIteration:
+#             print(f"finished iterating frames from video: {count+1} times")
+#             image_generator = video.iter_data()
+#             image = next(image_generator)
+#             store_frame.put(image)
+#             count+=1
+
+def speaking(string):
+    tts_engine.say(string)
+    tts_engine.runAndWait()
+
+def responding(widget, index, string):
     global image_generator, count
-    for i in range(round(speech_length_ticks)):
+    widget.configure(state="normal")
+    if len(string) > 0:
+        widget.insert(index, string[0])
         try:
             image = next(image_generator)
             store_frame.put(image)
@@ -43,23 +63,9 @@ def update_frame():
             image = next(image_generator)
             store_frame.put(image)
             count+=1
-    # try:
-    #     for image in video.iter_data():
-    #         store_frame.put(image) # put image inside Queue inside update_frame function ran inside a subthread
-    # except StopIteration:
-    #     print("finished iterating video frames")
-
-def speaking(string):
-    tts_engine.say(string)
-    tts_engine.runAndWait()
-
-def messaging(widget, index, string):
-    widget.configure(state="normal")
-    if len(string) > 0:
-        widget.insert(index, string[0])
         if len(string) > 1:
-            index = widget.index("%s + 1 char" % index)
-            widget.after(50, messaging, widget, index, string[1:])
+            index = widget.index(f"{index} + 1 char")
+            widget.after(50, responding, widget, index, string[1:])
     widget.configure(state="disabled")
 
 def receive_message():
@@ -71,14 +77,14 @@ def receive_message():
         data = raw.decode('utf-8').lower()
         print(data)
         speech_length_ticks = len(data)*1.1
-        sub_thread = Thread(target=update_frame, daemon=True)
-        sub_thread.start()
+        # sub_thread = Thread(target=update_frame, daemon=True)
+        # sub_thread.start()
 
         chat_container.configure(state="normal")
         chat_container.insert(END, "Führer: ")
         chat_container.configure(state="disabled")
 
-        messaging(chat_container, "end", data+"\n")
+        responding(chat_container, "end", data+"\n")
         speaking(data)
 
 def submit(user_entry):
@@ -93,13 +99,13 @@ def submit(user_entry):
 def update_gui():
     chat_container.see("end")
     if store_frame.empty():
-        insert_image.after(32, update_gui)
+        insert_image.after(33, update_gui)
     else:
         current_frame = store_frame.get_nowait()
         tk_image = ImageTk.PhotoImage(Image.fromarray(current_frame))
         insert_image.config(image=tk_image)
         insert_image.image = tk_image
-        insert_image.after(32, update_gui)
+        insert_image.after(33, update_gui)
 
 root = Tk()
 root.geometry('2000x1200')
@@ -112,7 +118,12 @@ def build_gui():
     top_frame = Frame(root)
     top_frame.pack(fill="both", expand=True)
 
-    name = Label(top_frame, text="'Ein Volk, ein Reich, ein Führer'", font=("Helvetica", 14, "italic"))
+    if "Blankenburg_UNZ1A" in font.families():
+        fraktur_font = font.Font(family="Blankenburg_UNZ1A", size=20, slant="italic")
+    else:
+        fraktur_font = font.Font(family="Arial", size=16, slant="italic")
+
+    name = Label(top_frame, text='"Ein Volk, ein Reich, ein Führer"', font=fraktur_font)
     name.pack(side="top")
 
     bottom_frame = Frame(top_frame)
@@ -125,9 +136,7 @@ def build_gui():
     insert_image.image = tk_image
     insert_image.pack(side="right")
 
-    faktur_font = font.Font(family="UnifrakturMaguntia", size=18)
-
-    chat_container = Text(top_frame, font=faktur_font, height=25, width=120)
+    chat_container = Text(top_frame, font="serif", height=25, width=120)
     chat_container.configure(state="disabled")
     chat_container.pack(side="left", fill="both", expand=True, padx=10, pady=(5, 5))
 

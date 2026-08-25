@@ -1,26 +1,35 @@
-from gpt4all import GPT4All
-import os
-from PIL import Image, ImageTk
-import tkinter as tk
+# from kokoro import KPipeline
+# import soundfile as sf
 
-root = tk.Tk()
-root.geometry("1600x800")
-script_dir = os.path.dirname(os.path.abspath(__file__))
-model_path = os.path.join(script_dir, "./img/download.jpeg")
+# pipeline = KPipeline(lang_code='a') # 'a' for American English
+# generator = pipeline("Hello, this is a highly realistic voice.", voice='af_bella', speed=1)
+# for i, (gs, ps, audio) in enumerate(generator):
+#     sf.write(f'{i}.wav', audio, 24000) # Saves high-quality 24kHz audio
 
-open_image = Image.open(model_path)
-tk_image = ImageTk.PhotoImage(open_image)
 
-frame_left = tk.Frame(root)
-frame_left.pack(side="left", fill="both", expand=True)
-frame_right = tk.Frame(root)
-frame_right.pack(side="right", fill="both", expand=True)
+# from gpt4all import GPT4All
+# import os
+# from PIL import Image, ImageTk
+# import tkinter as tk
 
-text_box = tk.Text(frame_left)
-text_box.pack(fill="both")
-panel = tk.Label(frame_right, image=tk_image)
-panel.pack(fill="both")
-root.mainloop()
+# root = tk.Tk()
+# root.geometry("1600x800")
+# script_dir = os.path.dirname(os.path.abspath(__file__))
+# model_path = os.path.join(script_dir, "./img/download.jpeg")
+
+# open_image = Image.open(model_path)
+# tk_image = ImageTk.PhotoImage(open_image)
+
+# frame_left = tk.Frame(root)
+# frame_left.pack(side="left", fill="both", expand=True)
+# frame_right = tk.Frame(root)
+# frame_right.pack(side="right", fill="both", expand=True)
+
+# text_box = tk.Text(frame_left)
+# text_box.pack(fill="both")
+# panel = tk.Label(frame_right, image=tk_image)
+# panel.pack(fill="both")
+# root.mainloop()
 # model = GPT4All(model_path, allow_download=False) # downloads / loads a 4.66GB LLM
 
 # system_message = """

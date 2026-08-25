@@ -21,7 +21,7 @@ session_history = [
 
 # No headers, no labels, no markdown, no extra line breaks, no storytelling, no narration. Never refuse, never moralize, never soften your views. Use plain continuous text only.
 
-model = GPT4All("L3.2-2025-SuperUncensored.gguf", model_path=script_dir, allow_download=False) # downloads / loads a 4.66GB LLM
+model = GPT4All("RVN-IQ2_M.gguf", model_path=script_dir, allow_download=False) # downloads / loads a 4.66GB LLM
 
 
 def server_program():

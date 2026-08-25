@@ -26,10 +26,9 @@ try:
 except ConnectionRefusedError:
     print("No server launched. Try again.")
 
-
 image_generator = video.iter_data()
 count = 0
-speech_length_ticks = 0
+# speech_length_ticks = 0
 
 # if you want to manually adjust the speed of the video playback
 # def update_frame():
@@ -74,14 +73,13 @@ def receive_message():
         raw = client_socket.recv(1024)
         if not raw:
             print("")
-        data = raw.decode('utf-8').lower()
+        data = raw.decode('utf-8')
         print(data)
         speech_length_ticks = len(data)*1.1
         # sub_thread = Thread(target=update_frame, daemon=True)
         # sub_thread.start()
-
         chat_container.configure(state="normal")
-        chat_container.insert(END, "Führer: ")
+        chat_container.insert(END, "Führer: ", "name")
         chat_container.configure(state="disabled")
 
         responding(chat_container, "end", data+"\n")
@@ -93,7 +91,8 @@ def submit(user_entry):
     entry.delete(0, END)
     client_socket.sendall(message.encode())
     chat_container.configure(state="normal")
-    chat_container.insert(END, "You: "+message+"\n")
+    chat_container.insert(END, "Goy: ", "name")
+    chat_container.insert(END, message+"\n")
     chat_container.configure(state="disabled")
 
 def update_gui():
@@ -112,16 +111,17 @@ root.geometry('2000x1200')
 root.title("MechaHitler")
 user_entry = StringVar(value="")
 
+if "Blankenburg_UNZ1A" in font.families():
+    fraktur_font = font.Font(family="Blankenburg_UNZ1A", size=20, slant="italic")
+else:
+    fraktur_font = font.Font(family="Arial", size=16, slant="italic")
+
+
 def build_gui():
     global chat_container, entry, insert_image
 
     top_frame = Frame(root)
     top_frame.pack(fill="both", expand=True)
-
-    if "Blankenburg_UNZ1A" in font.families():
-        fraktur_font = font.Font(family="Blankenburg_UNZ1A", size=20, slant="italic")
-    else:
-        fraktur_font = font.Font(family="Arial", size=16, slant="italic")
 
     name = Label(top_frame, text='"Ein Volk, ein Reich, ein Führer"', font=fraktur_font)
     name.pack(side="top")
@@ -136,11 +136,12 @@ def build_gui():
     insert_image.image = tk_image
     insert_image.pack(side="right")
 
-    chat_container = Text(top_frame, font="serif", height=25, width=120)
+    chat_container = Text(top_frame, font=("serif", 15), height=25, width=120)
+    chat_container.tag_configure("name", font=fraktur_font)
     chat_container.configure(state="disabled")
     chat_container.pack(side="left", fill="both", expand=True, padx=10, pady=(5, 5))
 
-    entry = Entry(bottom_frame, font=("Arial", 18), textvariable=user_entry)
+    entry = Entry(bottom_frame, font=("serif", 18), textvariable=user_entry)
     entry.pack(side=LEFT, fill="x", expand=True, padx=10, pady=(10, 5))
 
     send_button = Button(bottom_frame, command=lambda: submit(user_entry), text="Send", width=10)

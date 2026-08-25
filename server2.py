@@ -1,8 +1,6 @@
 from tkinter import *
 import socket
 from threading import Thread
-import queue
-import time
 
 host = '127.0.0.1'
 port = 5000
@@ -43,24 +41,27 @@ def submit(user_entry):
     conn.sendall(message.encode())  # send data to the client
 
 root = Tk()
-root.geometry('1000x650')
+root.geometry('2000x1200')
 user_entry = StringVar(value="")
 
-content = Frame(root, width=150)
-content.pack()
-name = Label(content, text="Chatroom")
+top_content = Frame(root)
+top_content.pack(side="top", expand=True)
+bottom_content = Frame(root)
+bottom_content.pack(side="bottom", expand=True)
+
+name = Label(top_content, text="Chatroom")
 name.pack()
-info = Label(content, text=f"Connected to: {host}")
+info = Label(top_content, text=f"Connected to: {host}")
 info.pack()
 
-display = Text(content, height=32, width=120)
-display.pack(fill="both", expand=True, padx=10, pady=(10, 5))
-
-entry = Entry(content, textvariable=user_entry)
+entry = Entry(bottom_content, textvariable=user_entry)
 entry.pack(side=LEFT, fill="x", expand=True, padx=10, pady=(10, 5))
 
-send_button = Button(content, command=lambda: submit(user_entry), text="Send", width=10)
+send_button = Button(bottom_content, command=lambda: submit(user_entry), text="Send", width=10)
 send_button.pack(side=RIGHT, padx=10, pady=(10, 5))
+
+display = Text(top_content, height=32, width=120)
+display.pack(fill="both", expand=True, padx=10, pady=(10, 5))
 
 loop_thread = Thread(target=receive_message, daemon=True)
 loop_thread.start()

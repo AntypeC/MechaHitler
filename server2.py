@@ -21,20 +21,31 @@ def typeit(widget, index, string):
             widget.after(50, typeit, widget, index, string[1:])
     
 def receive_message():
+    _raw = b''
     while True:
         raw = conn.recv(1024)  # read up to 1024 bytes; larger messages require multiple recv() calls
         if not raw:
             break
+        _raw += raw
+        if len(raw) == 1024:
+            print(f"byte length >= {len(raw)}")
+            continue
         try:
-            data = raw.decode('utf-8')
+            data = _raw.decode('utf-8')
+            _raw = b''
         except UnicodeDecodeError:
             print(f"Received non-UTF-8 data from {address}, skipping")
             continue
-
-        print("from connected user: " + str(data))
-        print(type(data))
-        display.insert(END, "Regular Goy: ")
-        typeit(display, "end", data+"\n")
+        try:
+            context = json.loads(data)
+            print(type(context))
+            print(context)
+        except json.JSONDecodeError as e:
+            print(e)
+            print("from connected user: " + data)
+            print(type(data))
+            display.insert(END, "Regular Goy: ")
+            typeit(display, "end", data+"\n")
 
 def submit(user_entry):
     message = user_entry.get()

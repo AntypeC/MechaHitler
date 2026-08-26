@@ -8,6 +8,7 @@ import imageio
 import os, queue
 import pyttsx3
 import ast
+import json
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 img_path = os.path.join(script_dir, "./img/führer/default.jpg")
@@ -127,13 +128,15 @@ def load_history():
     chat_history = filedialog.askopenfile()
     if chat_history != None:
         clear_history()
-        read_file = chat_history.read()
-        read_file = ast.literal_eval(read_file)
-        # client_socket.sendall(read_file.encode())
-        print(read_file)
-        print(type(read_file))
+        read_file = chat_history.read() # reads data and turns into string
+        chatlog_json = ast.literal_eval(read_file) # detects patterns in string and turn it into list
+        converted_to_string = json.dumps(chatlog_json) # runs list into string with correct formatting
+        client_socket.sendall(converted_to_string.encode())
+
+        print(chatlog_json)
+        print(type(chatlog_json))
         chat_container.configure(state="normal")
-        for i in read_file:
+        for i in chatlog_json:
             print(i)
             if i["role"] == "system":
                 continue
@@ -143,6 +146,7 @@ def load_history():
                 chat_container.insert(END, "Führer: ", "name")
             chat_container.insert(END, i["content"].strip()+"\n")
         chat_container.configure(state="disabled")
+        chat_history.close()
 
 def build_gui():
     global chat_container, entry, insert_image
@@ -162,6 +166,7 @@ def build_gui():
     settings.add_command(label="Load History", command=load_history)
     settings.add_command(label="Reset Session", command=clear_history)
     settings.add_command(label="Dark Mode")
+    settings.add_separator()
     settings.add_command(label="Exit", command=root.destroy)
 
     name = Label(top_frame, text='"Ein Volk, ein Reich, ein Führer"', font=fraktur_font)

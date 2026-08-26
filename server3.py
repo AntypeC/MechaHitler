@@ -3,6 +3,7 @@ from llama_cpp import Llama
 import pprint
 import socket
 import datetime
+import json
 
 # 1. Grab the absolute folder path where your script sits
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -105,6 +106,6 @@ if __name__ == '__main__':
     new_log = f"./logs/{datetime.datetime.now()}_log.json"
     open(new_log, "x")
 
-    with open(new_log, "a") as f:
-        f.write(str(chat_history))
+    with open(new_log, "w") as f:
+        json.dump(chat_history, f, indent=4)
 

@@ -1,6 +1,7 @@
 from tkinter import *
 import socket
 from threading import Thread
+import json
 
 host = '127.0.0.1'
 port = 5000
@@ -29,7 +30,9 @@ def receive_message():
         except UnicodeDecodeError:
             print(f"Received non-UTF-8 data from {address}, skipping")
             continue
+
         print("from connected user: " + str(data))
+        print(type(data))
         display.insert(END, "Regular Goy: ")
         typeit(display, "end", data+"\n")
 

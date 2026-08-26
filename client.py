@@ -1,5 +1,5 @@
 from tkinter import *
-from tkinter import font
+from tkinter import font, filedialog
 import socket
 from threading import Thread
 from PIL import Image, ImageTk
@@ -7,6 +7,7 @@ from PIL import Image, ImageTk
 import imageio
 import os, queue
 import pyttsx3
+import ast
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 img_path = os.path.join(script_dir, "./img/führer/default.jpg")
@@ -66,6 +67,7 @@ def responding(widget, index, string):
             index = widget.index(f"{index} + 1 char")
             widget.after(50, responding, widget, index, string[1:])
     widget.configure(state="disabled")
+    chat_container.see("end")
 
 def receive_message():
     global speech_length_ticks
@@ -75,7 +77,7 @@ def receive_message():
             print("")
         data = raw.decode('utf-8')
         print(data)
-        speech_length_ticks = len(data)*1.1
+        # speech_length_ticks = len(data)*1.1
         # sub_thread = Thread(target=update_frame, daemon=True)
         # sub_thread.start()
         chat_container.configure(state="normal")
@@ -94,9 +96,9 @@ def submit(user_entry):
     chat_container.insert(END, "Goy: ", "name")
     chat_container.insert(END, message+"\n")
     chat_container.configure(state="disabled")
+    chat_container.see("end")
 
 def update_gui():
-    chat_container.see("end")
     if store_frame.empty():
         insert_image.after(33, update_gui)
     else:
@@ -116,6 +118,31 @@ if "Blankenburg_UNZ1A" in font.families():
 else:
     fraktur_font = font.Font(family="Arial", size=16, slant="italic")
 
+def clear_history():
+    chat_container.configure(state="normal")
+    chat_container.delete("1.0", END)
+    chat_container.configure(state="disabled")
+
+def load_history():
+    chat_history = filedialog.askopenfile()
+    if chat_history != None:
+        clear_history()
+        read_file = chat_history.read()
+        read_file = ast.literal_eval(read_file)
+        # client_socket.sendall(read_file.encode())
+        print(read_file)
+        print(type(read_file))
+        chat_container.configure(state="normal")
+        for i in read_file:
+            print(i)
+            if i["role"] == "system":
+                continue
+            elif i["role"] == "user":
+                chat_container.insert(END, "Goy: ", "name")
+            elif i["role"] == "assistant":
+                chat_container.insert(END, "Führer: ", "name")
+            chat_container.insert(END, i["content"].strip()+"\n")
+        chat_container.configure(state="disabled")
 
 def build_gui():
     global chat_container, entry, insert_image
@@ -123,11 +150,22 @@ def build_gui():
     top_frame = Frame(root)
     top_frame.pack(fill="both", expand=True)
 
-    name = Label(top_frame, text='"Ein Volk, ein Reich, ein Führer"', font=fraktur_font)
-    name.pack(side="top")
-
     bottom_frame = Frame(top_frame)
     bottom_frame.pack(side="bottom", fill="x")
+
+    menubar = Menu(root)
+    root.config(menu=menubar)
+    settings = Menu(menubar, tearoff=0)
+    roles = Menu(menubar, tearoff=0)
+    menubar.add_cascade(label="⚙️ Preferences", menu=settings)
+    menubar.add_cascade(label="🎭 Roles", menu=roles)
+    settings.add_command(label="Load History", command=load_history)
+    settings.add_command(label="Reset Session", command=clear_history)
+    settings.add_command(label="Dark Mode")
+    settings.add_command(label="Exit", command=root.destroy)
+
+    name = Label(top_frame, text='"Ein Volk, ein Reich, ein Führer"', font=fraktur_font)
+    name.pack(side="top")
 
     img = Image.open(img_path)
     # img.thumbnail((768, 1168))
@@ -141,7 +179,7 @@ def build_gui():
     chat_container.configure(state="disabled")
     chat_container.pack(side="left", fill="both", expand=True, padx=10, pady=(5, 5))
 
-    entry = Entry(bottom_frame, font=("serif", 18), textvariable=user_entry)
+    entry = Entry(bottom_frame, font=("serif", 16), textvariable=user_entry)
     entry.pack(side=LEFT, fill="x", expand=True, padx=10, pady=(10, 5))
 
     send_button = Button(bottom_frame, command=lambda: submit(user_entry), text="Send", width=10)

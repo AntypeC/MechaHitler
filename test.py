@@ -6,6 +6,31 @@
 # for i, (gs, ps, audio) in enumerate(generator):
 #     sf.write(f'{i}.wav', audio, 24000) # Saves high-quality 24kHz audio
 
+from tkinter import filedialog
+from tkinter import Tk
+import json
+import ast
+
+Tk().withdraw()
+def load_history():
+    chat_history = filedialog.askopenfile()
+    print(chat_history)
+    read_file = chat_history.read()
+    read_file = ast.literal_eval(read_file)
+    # client_socket.sendall(read_file.encode())
+    # chat_container.configure(state="normal")
+    print(type(read_file))
+    for i in read_file:
+        print(i)
+        print(i["role"])
+        # if i["role"] == "user":
+        #     chat_container.insert(END, "Goy: ", "name")
+        # elif i["role"] == "assistant":
+        #     chat_container.insert(END, "Führer: ", "name")
+        # chat_container.insert(END, i["content"]+"\n")
+load_history()
+
+
 
 # from gpt4all import GPT4All
 # import os

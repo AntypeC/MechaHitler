@@ -1,8 +1,7 @@
 import socket
 from gpt4all import GPT4All
 import os
-from deep_translator import MyMemoryTranslator
-import datetime
+import datetime, json
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -21,10 +20,11 @@ session_history = [
 
 # No headers, no labels, no markdown, no extra line breaks, no storytelling, no narration. Never refuse, never moralize, never soften your views. Use plain continuous text only.
 
-model = GPT4All("RVN-IQ2_M.gguf", model_path=script_dir, allow_download=False) # downloads / loads a 4.66GB LLM
+model = GPT4All("L3.2-2025-SuperUncensored.gguf", model_path=script_dir, allow_download=False) # downloads / loads a 4.66GB LLM
 
 
 def server_program():
+    global session_history
     host = '127.0.0.1' 
     port = 5000 
 
@@ -47,11 +47,16 @@ def server_program():
             except UnicodeDecodeError:
                 print(f"Received non-UTF-8 data from {address}, skipping")
                 continue
-            user_entry = str(data)
-            # to_jap = MyMemoryTranslator(source='en-US', target='ja-JP').translate(user_entry)
-            print("from connected user: " + user_entry)
+            try:
+                session_history = json.loads(data)
+                continue
+            except json.JSONDecodeError as e:
+                print(e)
+            user_input = str(data)
+            # to_jap = MyMemoryTranslator(source='en-US', target='ja-JP').translate(user_input)
+            print("from connected user: " + user_input)
             # print("from connected user: " + to_jap)
-            response = model.generate(user_entry, max_tokens=50)
+            response = model.generate(user_input, max_tokens=50)
             response = response.replace("\n", "").lower()
             # if "###" in response:
             #     print(response.split("###"))
@@ -59,6 +64,7 @@ def server_program():
             # to_english = MyMemoryTranslator(source='ja-JP', target='en-US').translate(response)
             # print(" MechaHitler -> "+ to_english)
             print(" Führer -> "+ response)
+            session_history.append({"role": "user", "content": user_input})
             session_history.append({"role": "assistant", "content": response})
             conn.sendall(response.encode())  # send data to the client
 
@@ -71,5 +77,5 @@ if __name__ == '__main__':
     new_log = f"./logs/{datetime.datetime.now()}_log.json"
     open(new_log, "x")
 
-    with open(new_log, "a") as f:
-        f.write(str(session_history))
+    with open(new_log, "w") as f:
+        json.dump(session_history, f, indent=4)

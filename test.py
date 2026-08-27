@@ -10,7 +10,7 @@ import edge_tts
 import pyaudio
 from io import BytesIO
 from pydub import AudioSegment
-import time, os
+import time, os, sys
 from threading import Thread
 
 VOICE="ja-JP-NanamiNeural"
@@ -44,30 +44,33 @@ char_num = 0
 word_num = 0
 start_time = 0
 current_word = ""
-def typeit(word_list, offset_list, duration_list):
-    global char_num, word_num, start_time, current_word
-    if word_num==0 and char_num==0:
-        start_time = time.time_ns()
-    word = word_list[word_num]
-    delay = (duration_list[word_num]/len(word))/10_000_000
-    current_offset = offset_list[word_num]
-    while (time.time_ns() - start_time) < current_offset:
-        continue
-    else:
-        if len(word) > 0 and word != current_word:
-            char = word[char_num]
-            print(char, end="", flush=True)
-            current_word += char
-            char_num +=1
-            time.sleep(delay)
-            typeit(word_list, offset_list, duration_list)
-        else:
-            if word_num != len(word_list)-1:
-                word_num +=1
-                char_num = 0
-                current_word = ""
-                print(" ", end="")
-                typeit(word_list, offset_list, duration_list)
+# def typeit(word_list, offset_list, duration_list):if len(sys.argv)>1:
+#     print(len(sys.argv))
+#     print(sys.argv[0])
+#     print(sys.argv[1])
+#     global char_num, word_num, start_time, current_word
+#     if word_num==0 and char_num==0:
+#         start_time = time.time_ns()
+#     word = word_list[word_num]
+#     delay = (duration_list[word_num]/len(word))/10_000_000
+#     current_offset = offset_list[word_num]
+#     while (time.time_ns() - start_time) < current_offset:
+#         continue
+#     else:
+#         if len(word) > 0 and word != current_word:
+#             char = word[char_num]
+#             print(char, end="", flush=True)
+#             current_word += char
+#             char_num +=1
+#             time.sleep(delay)
+#             typeit(word_list, offset_list, duration_list)
+#         else:
+#             if word_num != len(word_list)-1:
+#                 word_num +=1
+#                 char_num = 0
+#                 current_word = ""
+#                 print(" ", end="")
+#                 typeit(word_list, offset_list, duration_list)
 
 
 def speaking(TEXT) -> None:
@@ -115,7 +118,6 @@ def play_audio_chunks(chunks: list[bytes], stream: pyaudio.Stream) -> None:
 
 TEXT = input(" >> ")
 speaking(TEXT)
-
 
 # def speaking(TEXT):
 #     communicator = edge_tts.Communicate(TEXT, VOICE, boundary="WordBoundary")

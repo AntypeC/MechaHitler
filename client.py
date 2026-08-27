@@ -5,7 +5,7 @@ from threading import Thread
 from PIL import Image, ImageTk
 # from tkinterdnd2 import DND_FILES, TkinterDnD
 import imageio
-import os, queue, time
+import os, queue, time, sys
 import edge_tts
 import pyaudio
 from io import BytesIO
@@ -424,4 +424,8 @@ def build_gui():
 
 if __name__ == "__main__":
     build_gui()
+    if len(sys.argv)>1:
+        if sys.argv[1]=="dark":
+            apply_theme()
+            
     root.mainloop()

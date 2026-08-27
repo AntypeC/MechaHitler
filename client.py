@@ -177,7 +177,7 @@ def anime(widget, index, word_list, offset_list, duration_list):
                 current_word = ""
                 widget.after(0, anime, widget, index, word_list, offset_list, duration_list)
             else:
-                print("hello, this is the end of the statement")
+                chat_container.insert(END, "\n")
                 word_num = 0
                 start_time = 0
                 current_word = ""
@@ -209,18 +209,21 @@ def submit(user_entry):
     entry.delete(0, END)
     client_socket.sendall(message.encode())
     chat_container.configure(state="normal")
-    if chat_container.get("1.0", "end-1c"):
-        chat_container.insert(END, "\n")
     chat_container.insert(END, "Goy: ", "name")
     chat_container.insert(END, message+"\n")
     chat_container.configure(state="disabled")
     chat_container.see("end")
 
+dot_counter = 0
 def update_gui():
+    global dot_counter
     if is_fuhrer_typing==True:
+        dot_counter+=1
+        entry.delete(0, END)
         entry.insert(0, "Führer is responding...")
         entry.configure(state="disabled")
     if store_frame.empty():
+        dot_counter=0
         insert_image.after(33, update_gui)
     else:
         current_frame = store_frame.get_nowait()
@@ -268,8 +271,106 @@ def load_history():
         chat_container.configure(state="disabled")
         chat_history.close()
 
+BRIGHT = {
+    "root":            "#E8E8E8",
+    "top_frame":       "#E8E8E8",
+    "bottom_frame":    "#DCDCDC",
+    "menubar":         "#E8E8E8",
+    "settings":        "#F4F4F4",
+    "roles":           "#F4F4F4",
+    "name_bg":         "#E8E8E8",
+    "name_fg":         "#1A1A1A",
+    "chat_bg":         "#FFFFFF",
+    "chat_fg":         "#111111",
+    "chat_insert":     "#111111",
+    "entry_bg":        "#FFFFFF",
+    "entry_fg":        "#111111",
+    "entry_insert":    "#8B1A1A",
+    "button_bg":       "#E0E0E0",
+    "button_fg":       "#111111",
+    "button_active":   "#C9C9C9",
+    "accent":          "#7A1515",
+    "select_bg":       "#C9B896",
+    "select_fg":       "#111111",
+}
+
+DARK = {
+    "root":            "#16191F",
+    "top_frame":       "#16191F",
+    "bottom_frame":    "#1F232B",
+    "menubar":         "#1F232B",
+    "settings":        "#272C36",
+    "roles":           "#272C36",
+    "name_bg":         "#16191F",
+    "name_fg":         "#D4C4A0",
+    "chat_bg":         "#22272F",
+    "chat_fg":         "#EDE4D4",
+    "chat_insert":     "#EDE4D4",
+    "entry_bg":        "#2C323C",
+    "entry_fg":        "#F3EADF",
+    "entry_insert":    "#C94A3A",
+    "button_bg":       "#3A414C",
+    "button_fg":       "#EDE4D4",
+    "button_active":   "#B33A2C",
+    "accent":          "#B33A2C",
+    "select_bg":       "#6E3A2A",
+    "select_fg":       "#F7EFE0",
+}
+
+dark_mode=False
+
+def apply_theme():
+    global dark_mode
+    if dark_mode==False:
+        print("hello??")
+        dark_mode=True
+        c=DARK
+    else:
+        dark_mode=False
+        c=BRIGHT
+    root.configure(bg=c["root"])
+    top_frame.configure(bg=c["top_frame"])
+    bottom_frame.configure(bg=c["bottom_frame"])
+
+    menubar.configure(bg=c["menubar"], fg=c["chat_fg"],
+                      activebackground=c["accent"], activeforeground=c["select_fg"])
+    settings.configure(bg=c["settings"], fg=c["chat_fg"],
+                       activebackground=c["accent"], activeforeground=c["select_fg"])
+    roles.configure(bg=c["roles"], fg=c["chat_fg"],
+                    activebackground=c["accent"], activeforeground=c["select_fg"])
+
+    name.configure(bg=c["name_bg"], fg=c["name_fg"])
+    insert_image.configure(bg=c["top_frame"])
+
+    chat_container.configure(
+        bg=c["chat_bg"],
+        fg=c["chat_fg"],
+        insertbackground=c["chat_insert"],
+        selectbackground=c["select_bg"],
+        selectforeground=c["select_fg"],
+        highlightbackground=c["top_frame"],
+        highlightcolor=c["accent"],
+    )
+    chat_container.tag_configure("name", foreground=c["accent"])
+
+    entry.configure(
+        bg=c["entry_bg"],
+        fg=c["entry_fg"],
+        insertbackground=c["entry_insert"],
+        highlightbackground=c["accent"],
+        highlightcolor=c["accent"],
+    )
+
+    send_button.configure(
+        bg=c["button_bg"],
+        fg=c["button_fg"],
+        activebackground=c["button_active"],
+        activeforeground=c["select_fg"],
+        highlightbackground=c["accent"],
+    )
+
 def build_gui():
-    global chat_container, entry, insert_image
+    global top_frame, bottom_frame, menubar, root, settings, roles, name, insert_image, chat_container, entry, send_button
 
     top_frame = Frame(root)
     top_frame.pack(fill="both", expand=True)
@@ -285,7 +386,7 @@ def build_gui():
     menubar.add_cascade(label="🎭 Roles", menu=roles)
     settings.add_command(label="Load History", command=load_history)
     settings.add_command(label="Reset Session", command=clear_history)
-    settings.add_command(label="Dark Mode")
+    settings.add_command(label="Dark Mode", command=apply_theme)
     settings.add_separator()
     settings.add_command(label="Exit", command=root.destroy)
 
@@ -316,7 +417,6 @@ def build_gui():
     root.bind("<Return>", lambda event: submit(user_entry))
 
     update_gui()
-
 
 if __name__ == "__main__":
     build_gui()

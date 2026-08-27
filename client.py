@@ -135,13 +135,14 @@ image_generator = video.iter_data()
 count = 0
 
 word_num = 0
+char_num = 0
 start_time = 0
 current_word = ""
 checked_time = False
 is_fuhrer_typing = False
 
 def anime(widget, index, word_list, offset_list, duration_list):
-    global image_generator, count, word_num, start_time, current_word, checked_time, is_fuhrer_typing
+    global image_generator, count, word_num, char_num, start_time, current_word, checked_time, is_fuhrer_typing
     is_fuhrer_typing = True
     if checked_time == False:
             start_time = time.perf_counter_ns()
@@ -153,9 +154,9 @@ def anime(widget, index, word_list, offset_list, duration_list):
             widget.after(int((current_offset-time_diff)*1000), anime, widget, index, word_list, offset_list, duration_list)
     else:
         widget.configure(state="normal")
-        if len(TEXT) > 0:
-            widget.insert(index, TEXT[0])
-            current_word += TEXT[0]
+        if len(TEXT) > 0 and TEXT != current_word:
+            widget.insert(index, TEXT[char_num])
+            current_word += TEXT[char_num]
             delay = (duration_list[word_num]/len(TEXT))/10_000_000
             try:
                 image = next(image_generator)
@@ -168,17 +169,19 @@ def anime(widget, index, word_list, offset_list, duration_list):
                 count+=1
             # if len(" ".join(word_list))-(len(word_list)-1) > 1:
             index = widget.index(f"{index} + 1 char")
-            word_list[word_num] = TEXT[1:]
+            char_num+=1
             widget.after(int(delay*1000), anime, widget, index, word_list, offset_list, duration_list)
         else:
             if word_num != len(word_list)-1:
                 widget.insert(index, " ")
                 word_num +=1
+                char_num=0
                 current_word = ""
                 widget.after(0, anime, widget, index, word_list, offset_list, duration_list)
             else:
                 chat_container.insert(END, "\n")
                 word_num = 0
+                char_num=0
                 start_time = 0
                 current_word = ""
                 checked_time = False
@@ -224,13 +227,13 @@ def update_gui():
         entry.configure(state="disabled")
     if store_frame.empty():
         dot_counter=0
-        insert_image.after(33, update_gui)
+        insert_image.after(20, update_gui)
     else:
         current_frame = store_frame.get_nowait()
         tk_image = ImageTk.PhotoImage(Image.fromarray(current_frame))
         insert_image.config(image=tk_image)
         insert_image.image = tk_image
-        insert_image.after(33, update_gui)
+        insert_image.after(20, update_gui)
 
 root = Tk()
 root.geometry('2000x1200')
@@ -322,11 +325,12 @@ dark_mode=False
 def apply_theme():
     global dark_mode
     if dark_mode==False:
-        print("hello??")
         dark_mode=True
+        settings.entryconfigure(2, label="Light Mode")
         c=DARK
     else:
         dark_mode=False
+        settings.entryconfigure(2, label="Dark Mode")
         c=BRIGHT
     root.configure(bg=c["root"])
     top_frame.configure(bg=c["top_frame"])

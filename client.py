@@ -10,6 +10,7 @@ import edge_tts
 import pyaudio
 from io import BytesIO
 from pydub import AudioSegment
+from langdetect import detect
 import ast
 import json
 
@@ -19,8 +20,8 @@ img_path = os.path.join(script_dir, "./img/führer/anime_girl.jpg")
 speaking_video = imageio.get_reader("./img/führer/speak.mp4")
 blinking_video = imageio.get_reader("./img/führer/blink.mp4")
 
-speaking_frame_storage = queue.Queue(maxsize=10) # get 10 frames at most, pause update_frame() if full
-blinking_frame_storage = queue.Queue(maxsize=10)
+speaking_frame_storage = queue.Queue(maxsize=20) # get 10 frames at most, pause update_frame() if full
+blinking_frame_storage = queue.Queue(maxsize=20)
 
 host = '127.0.0.1'
 port = 5000
@@ -80,14 +81,15 @@ except ConnectionRefusedError:
 #     chat_container.after(27, update_frame)
 
 VOICE="en-US-AnaNeural"
-CHUNK_SIZE = 20
+lang=""
+# CHUNK_SIZE = 20
 
 def buffer_speech(TEXT) -> None:
     global audio_chunks, audio_stream, pyaudio_instance, word_list
     communicator = edge_tts.Communicate(TEXT, VOICE, boundary="WordBoundary")
     audio_chunks = []
     word_boundary = []
-    word_list = TEXT.split()
+    word_list = []
     offset_list = []
     duration_list = []
 
@@ -99,7 +101,7 @@ def buffer_speech(TEXT) -> None:
             # print("audio chunk")
             # print(chunk)
         if chunk["type"] == "WordBoundary":
-            # word_list.append(chunk["text"])
+            word_list.append(chunk["text"])
             offset_list.append(chunk["offset"])
             duration_list.append(chunk["duration"])
             word_boundary.append(chunk)
@@ -118,6 +120,8 @@ def buffer_speech(TEXT) -> None:
     chat_container.configure(state="disabled")
     # type_thread = Thread(target=responding, args=(chat_container, "end", word_list, offset_list, duration_list), daemon=False)
     # type_thread.start()
+    if lang=="en":
+        word_list = TEXT.split()
     anime(chat_container, "end", word_list, offset_list, duration_list)
     play_audio_chunks(audio_chunks, audio_stream)
     audio_chunks.clear()
@@ -188,6 +192,7 @@ def anime(widget, index, word_list, offset_list, duration_list):
                 chat_container.configure(state="disabled")
 
 def receive_message():
+    global lang, VOICE
     buffer = ""
     while True:
         raw = client_socket.recv(1024)
@@ -198,6 +203,12 @@ def receive_message():
             message, buffer = buffer.split("<END_OF_MESSAGE>", maxsplit=1) # split() clear the texts before "<END_OF_MESSAGE>" in buffer by assigning it to message
             print("MESSAGE:", message)
             print("BUFFER: ", buffer)
+            lang=detect(message)
+            print("LANGAUGE DETECTED:", lang)
+            if lang=="ja":
+                VOICE="ja-JP-NanamiNeural"
+            elif lang=="zh-cn":
+                VOICE="zh-CN-XiaoyiNeural"
             buffer_speech(message)
 
 def submit(user_entry):
@@ -240,7 +251,6 @@ def update_gui():
         insert_image.image = frame_image
         insert_image.after(33, update_gui)
 
-
 root = Tk()
 root.geometry('2000x1200')
 root.title("MechaHitler")
@@ -256,7 +266,28 @@ def clear_history():
     chat_container.delete("1.0", END)
     chat_container.configure(state="disabled")
 
+voice_cycle = 0
+def accent():
+    global roles, voice_cycle, VOICE
+    if voice_cycle==0:
+        VOICE="ja-JP-NanamiNeural"
+        roles.entryconfigure(1, label="Accent: (zh-CN)")
+        print("Switched voice to ja-JP-NanamiNeural!")
+    elif voice_cycle==1:
+        VOICE="zh-CN-XiaoyiNeural"
+        roles.entryconfigure(1, label="Accent: (en-US)")
+        print("Switched voice to zh-CN-XiaoyiNeural!")
+    else:
+        VOICE = "en-US-AnaNeural"
+        roles.entryconfigure(1, label="Accent: (ja-JP)")
+        print("Switched voice to en-US-AnaNeural!")
+    voice_cycle = (voice_cycle+1)%3
+
+def character():
+    pass
+
 def load_history():
+    print("user is attempting to choose log")
     chat_history = filedialog.askopenfile()
     if chat_history != None:
         clear_history()
@@ -264,12 +295,11 @@ def load_history():
         chatlog_json = ast.literal_eval(read_file) # detects patterns in string and turn it into list
         converted_to_string = json.dumps(chatlog_json) # runs list into string with correct formatting
         client_socket.sendall(converted_to_string.encode())
-
+        print("CHAT_HISTORY:")
         print(chatlog_json)
-        print(type(chatlog_json))
+        # print(type(chatlog_json))
         chat_container.configure(state="normal")
         for i in chatlog_json:
-            print(i)
             if i["role"] == "system":
                 continue
             elif i["role"] == "user":
@@ -333,12 +363,12 @@ def apply_theme():
     if dark_mode==False:
         dark_mode=True
         settings.entryconfigure(2, label="Light Mode")
-        print("Switched to Light Mode!")
+        print(" DARK MODE ACTIVATED!")
         c=DARK
     else:
         dark_mode=False
         settings.entryconfigure(2, label="Dark Mode")
-        print("Switched to Dark Mode!")
+        print("LIGHT MODE ACTIVATED!")
         c=BRIGHT
     root.configure(bg=c["root"])
     top_frame.configure(bg=c["top_frame"])
@@ -371,6 +401,8 @@ def apply_theme():
         insertbackground=c["entry_insert"],
         highlightbackground=c["accent"],
         highlightcolor=c["accent"],
+        disabledbackground=c["entry_bg"],
+        disabledforeground=c["entry_insert"]
     )
 
     send_button.configure(
@@ -394,13 +426,15 @@ def build_gui():
     root.config(menu=menubar)
     settings = Menu(menubar, tearoff=0)
     roles = Menu(menubar, tearoff=0)
-    menubar.add_cascade(label="⚙️ Preferences", menu=settings)
+    menubar.add_cascade(label="⚙️ Settings", menu=settings)
     menubar.add_cascade(label="🎭 Roles", menu=roles)
     settings.add_command(label="Load History", command=load_history)
     settings.add_command(label="Reset Session", command=clear_history)
     settings.add_command(label="Dark Mode", command=apply_theme)
     settings.add_separator()
     settings.add_command(label="Exit", command=root.destroy)
+    roles.add_command(label="Character Selection", command=character)
+    roles.add_command(label="Accent: (JA)", command=accent)
 
     name = Label(top_frame, text='"Ein Volk, ein Reich, ein Führer"', font=fraktur_font)
     name.pack(side="top")
@@ -428,6 +462,7 @@ def build_gui():
 
     root.bind("<Return>", lambda event: submit(user_entry))
 
+    apply_theme()
     update_gui()
     # blinking_thread = Thread(target=update_frame(), daemon=True)
     # blinking_thread.start()
@@ -435,7 +470,7 @@ def build_gui():
 if __name__ == "__main__":
     build_gui()
     if len(sys.argv)>1:
-        if sys.argv[1]=="dark":
+        if sys.argv[1]=="light":
             apply_theme()
 
     root.mainloop()

@@ -1,7 +1,8 @@
 import socket
 from gpt4all import GPT4All
 import os
-import datetime, json
+import json
+from datetime import datetime
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -22,8 +23,11 @@ session_history = [
 
 model = GPT4All("L3.2-2025-SuperUncensored.gguf", model_path=script_dir, allow_download=False) # downloads / loads a 4.66GB LLM
 
+new_log = False
+log_name = ""
 
 def server_program():
+    global new_log, log_name
     global session_history
     host = '127.0.0.1' 
     port = 5000 
@@ -40,7 +44,7 @@ def server_program():
         while True:
             raw = conn.recv(1024)  # read up to 1024 bytes; larger messages require multiple recv() calls
             if not raw:
-                print("raw content", raw)
+                # print("raw content", raw)
                 break
             try:
                 data = raw.decode('utf-8')
@@ -66,6 +70,15 @@ def server_program():
             print(" Führer -> "+ response)
             session_history.append({"role": "user", "content": user_input})
             session_history.append({"role": "assistant", "content": response})
+
+            if new_log == False:
+                print("new log created")
+                new_log = True
+                log_name = f"./logs/{response[:20].replace(" ", "_")}-{datetime.now().strftime("%Y%m%d-%H%M%S")}-chatlog.json"
+            with open(log_name, "w") as f:
+                print("New log created:", log_name)
+                json.dump(session_history, f, indent=4)
+
             conn.sendall((response+"<END_OF_MESSAGE>").encode())  # send data to the client
 
     conn.close()  # close the connection
@@ -74,7 +87,7 @@ def server_program():
 
 if __name__ == '__main__':
     server_program()
-    new_log = f"./logs/{datetime.datetime.now()}_log.json"
-    if len(session_history) > 2:
-        with open(new_log, "w") as f:
-            json.dump(session_history, f, indent=4)
+
+
+# (0, 2^k - 1)
+# (-2^(k-1), 2^(k-1) -1)

@@ -14,11 +14,13 @@ import ast
 import json
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
-img_path = os.path.join(script_dir, "./img/führer/grok-71d4db52-e556-4e72-8998-f1112a05fc40.jpg")
+img_path = os.path.join(script_dir, "./img/führer/anime_girl.jpg")
 # server_path = os.path.join(script_dir, "./server.py")
-video = imageio.get_reader("./img/führer/grok-video-bba23814-090d-4ad4-9309-b66c4da8f74a.mp4")
+speaking_video = imageio.get_reader("./img/führer/speak.mp4")
+blinking_video = imageio.get_reader("./img/führer/blink.mp4")
 
-store_frame = queue.Queue(maxsize=10) # get 10 frames at most, pause update_frame() if full
+speaking_frame_storage = queue.Queue(maxsize=10) # get 10 frames at most, pause update_frame() if full
+blinking_frame_storage = queue.Queue(maxsize=10)
 
 host = '127.0.0.1'
 port = 5000
@@ -60,31 +62,27 @@ except ConnectionRefusedError:
 # def play_audio_chunks(chunks: list[bytes], stream: pyaudio.Stream) -> None:
 #     stream.write(AudioSegment.from_mp3(BytesIO(b''.join(chunks))).raw_data) 
 
-# image_generator = video.iter_data()
-# count = 0
-# speech_length_ticks = 0
+# _count = 0
 
 # if you want to manually adjust the speed of the video playback
 # def update_frame():
-#     global image_generator, count
-#     for i in range(round(speech_length_ticks)):
+#     global blinking_frame_storage, blinking_image_generator, _count
+#     if is_fuhrer_speaking==False:
 #         try:
-#             image = next(image_generator)
-#             store_frame.put(image)
+#             image = next(blinking_image_generator)
+#             blinking_frame_storage.put(image)
 #         except StopIteration:
-#             print(f"finished iterating frames from video: {count+1} times")
-#             image_generator = video.iter_data()
-#             image = next(image_generator)
-#             store_frame.put(image)
-#             count+=1
+#             print(f"finished iterating frames from blink: {_count+1} times")
+#             blinking_image_generator = blinking_video.iter_data()
+#             image = next(blinking_image_generator)
+#             blinking_frame_storage.put(image)
+#             _count+=1
+#     chat_container.after(27, update_frame)
 
-
-VOICE="ja-JP-NanamiNeural"
+VOICE="en-US-AnaNeural"
 CHUNK_SIZE = 20
 
-
-
-def speaking(TEXT) -> None:
+def buffer_speech(TEXT) -> None:
     global audio_chunks, audio_stream, pyaudio_instance, word_list
     communicator = edge_tts.Communicate(TEXT, VOICE, boundary="WordBoundary")
     audio_chunks = []
@@ -131,19 +129,18 @@ def play_audio_chunks(chunks: list[bytes], stream: pyaudio.Stream) -> None:
     stream.write(AudioSegment.from_mp3(BytesIO(b''.join(chunks))).raw_data) 
 
 
-image_generator = video.iter_data()
-count = 0
+image_generator = speaking_video.iter_data()
 
 word_num = 0
 char_num = 0
 start_time = 0
 current_word = ""
 checked_time = False
-is_fuhrer_typing = False
+is_fuhrer_speaking = False
 
 def anime(widget, index, word_list, offset_list, duration_list):
-    global image_generator, count, word_num, char_num, start_time, current_word, checked_time, is_fuhrer_typing
-    is_fuhrer_typing = True
+    global image_generator, word_num, char_num, start_time, current_word, checked_time, is_fuhrer_speaking
+    is_fuhrer_speaking = True
     if checked_time == False:
             start_time = time.perf_counter_ns()
             checked_time = True
@@ -160,13 +157,12 @@ def anime(widget, index, word_list, offset_list, duration_list):
             delay = (duration_list[word_num]/len(TEXT))/10_000_000
             try:
                 image = next(image_generator)
-                store_frame.put(image)
+                speaking_frame_storage.put(image)
             except StopIteration:
-                print(f"finished iterating frames from video: {count+1} times")
-                image_generator = video.iter_data()
+                # print(f"Speaking...")
+                image_generator = speaking_video.iter_data()
                 image = next(image_generator)
-                store_frame.put(image)
-                count+=1
+                speaking_frame_storage.put(image)
             # if len(" ".join(word_list))-(len(word_list)-1) > 1:
             index = widget.index(f"{index} + 1 char")
             char_num+=1
@@ -174,6 +170,7 @@ def anime(widget, index, word_list, offset_list, duration_list):
         else:
             if word_num != len(word_list)-1:
                 widget.insert(index, " ")
+                widget.see("end")
                 word_num +=1
                 char_num=0
                 current_word = ""
@@ -185,26 +182,23 @@ def anime(widget, index, word_list, offset_list, duration_list):
                 start_time = 0
                 current_word = ""
                 checked_time = False
-                is_fuhrer_typing = False
+                is_fuhrer_speaking = False
                 entry.configure(state="normal")
                 entry.delete(0, END)
                 chat_container.configure(state="disabled")
-                chat_container.see("end")
 
 def receive_message():
+    buffer = ""
     while True:
         raw = client_socket.recv(1024)
         if not raw:
-            print("")
-        else:
-            data = raw.decode('utf-8')
-            print(data)
-            # speech_length_ticks = len(data)*1.1
-            # sub_thread = Thread(target=update_frame, daemon=True)
-            # sub_thread.start()
-
-            # responding(chat_container, "end", data+"\n")
-            speaking(data)
+            print("raw content", raw)
+        buffer+=raw.decode('utf-8')
+        while "<END_OF_MESSAGE>" in buffer:
+            message, buffer = buffer.split("<END_OF_MESSAGE>", maxsplit=1) # split() clear the texts before "<END_OF_MESSAGE>" in buffer by assigning it to message
+            print("MESSAGE:", message)
+            print("BUFFER: ", buffer)
+            buffer_speech(message)
 
 def submit(user_entry):
     message = user_entry.get()
@@ -217,23 +211,35 @@ def submit(user_entry):
     chat_container.configure(state="disabled")
     chat_container.see("end")
 
-dot_counter = 0
+blinking_image_generator = blinking_video.iter_data()
+
 def update_gui():
-    global dot_counter
-    if is_fuhrer_typing==True:
-        dot_counter+=1
+    global blinking_image_generator
+    if is_fuhrer_speaking==True:
         entry.delete(0, END)
         entry.insert(0, "Führer is responding...")
         entry.configure(state="disabled")
-    if store_frame.empty():
-        dot_counter=0
-        insert_image.after(20, update_gui)
+        if speaking_frame_storage.empty():
+            insert_image.after(33, update_gui)
+        else:
+            current_frame = speaking_frame_storage.get_nowait()
+            tk_image = ImageTk.PhotoImage(Image.fromarray(current_frame))
+            insert_image.config(image=tk_image)
+            insert_image.image = tk_image
+            insert_image.after(33, update_gui)
     else:
-        current_frame = store_frame.get_nowait()
-        tk_image = ImageTk.PhotoImage(Image.fromarray(current_frame))
-        insert_image.config(image=tk_image)
-        insert_image.image = tk_image
-        insert_image.after(20, update_gui)
+        entry.configure(state="normal")
+        try:
+            image=next(blinking_image_generator)
+        except StopIteration:
+            # print(f"Eyes drooping... falling asleep...")
+            blinking_image_generator = blinking_video.iter_data()
+            image=next(blinking_image_generator)
+        frame_image=ImageTk.PhotoImage(Image.fromarray(image))
+        insert_image.config(image=frame_image)
+        insert_image.image = frame_image
+        insert_image.after(33, update_gui)
+
 
 root = Tk()
 root.geometry('2000x1200')
@@ -327,10 +333,12 @@ def apply_theme():
     if dark_mode==False:
         dark_mode=True
         settings.entryconfigure(2, label="Light Mode")
+        print("Switched to Light Mode!")
         c=DARK
     else:
         dark_mode=False
         settings.entryconfigure(2, label="Dark Mode")
+        print("Switched to Dark Mode!")
         c=BRIGHT
     root.configure(bg=c["root"])
     top_frame.configure(bg=c["top_frame"])
@@ -421,11 +429,13 @@ def build_gui():
     root.bind("<Return>", lambda event: submit(user_entry))
 
     update_gui()
+    # blinking_thread = Thread(target=update_frame(), daemon=True)
+    # blinking_thread.start()
 
 if __name__ == "__main__":
     build_gui()
     if len(sys.argv)>1:
         if sys.argv[1]=="dark":
             apply_theme()
-            
+
     root.mainloop()

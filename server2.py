@@ -52,7 +52,7 @@ def submit(user_entry):
     entry.delete(0, END)
     message = message.lower().strip()
     display.insert(END, "You: "+message+"\n")
-    conn.sendall(message.encode())  # send data to the client
+    conn.sendall((message+"<END_OF_MESSAGE>").encode())  # send data to the client
 
 root = Tk()
 root.geometry('2000x1200')

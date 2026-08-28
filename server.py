@@ -66,7 +66,7 @@ def server_program():
             print(" Führer -> "+ response)
             session_history.append({"role": "user", "content": user_input})
             session_history.append({"role": "assistant", "content": response})
-            conn.sendall(response.encode())  # send data to the client
+            conn.sendall((response+"<END_OF_MESSAGE>").encode())  # send data to the client
 
     conn.close()  # close the connection
     server_socket.close()  # close the listening socket
@@ -75,7 +75,6 @@ def server_program():
 if __name__ == '__main__':
     server_program()
     new_log = f"./logs/{datetime.datetime.now()}_log.json"
-    open(new_log, "x")
-
-    with open(new_log, "w") as f:
-        json.dump(session_history, f, indent=4)
+    if len(session_history) > 2:
+        with open(new_log, "w") as f:
+            json.dump(session_history, f, indent=4)

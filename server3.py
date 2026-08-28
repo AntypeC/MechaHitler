@@ -106,7 +106,7 @@ def server_program():
             chat_history.append({"role": "assistant", "content": ai_reply})
             print(chat_history)
             
-            conn.sendall(ai_reply.strip().encode())  # send data to the client
+            conn.sendall((ai_reply+"<END_OF_MESSAGE>").strip().encode())  # send data to the client
 
     conn.close()  # close the connection
     server_socket.close()  # close the listening socket

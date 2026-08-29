@@ -17,8 +17,8 @@ import json
 script_dir = os.path.dirname(os.path.abspath(__file__))
 img_path = os.path.join(script_dir, "./img/führer/anime_girl.jpg")
 # server_path = os.path.join(script_dir, "./server.py")
-speaking_video = imageio.get_reader("./img/führer/speak.mp4")
-blinking_video = imageio.get_reader("./img/führer/blink.mp4")
+speech_media = imageio.get_reader("./img/führer/speak2.mp4")
+default_media = imageio.get_reader("./img/führer/blink2.mp4")
 
 speaking_frame_storage = queue.Queue(maxsize=20) # get 10 frames at most, pause update_frame() if full
 blinking_frame_storage = queue.Queue(maxsize=20)
@@ -144,6 +144,7 @@ def buffer_speech(TEXT) -> None:
     # type_thread = Thread(target=responding, args=(chat_container, "end", word_list, offset_list, duration_list), daemon=False)
     # type_thread.start()
     if lang in latin_space_separated_codes:
+        dprint(f"WORD_LIST PART OF {latin_space_separated_codes}")
         word_list = TEXT.split()
     anime(chat_container, "end", word_list, offset_list, duration_list)
     play_audio_chunks(audio_chunks, audio_stream)
@@ -156,7 +157,7 @@ def play_audio_chunks(chunks: list[bytes], stream: pyaudio.Stream) -> None:
     stream.write(AudioSegment.from_mp3(BytesIO(b''.join(chunks))).raw_data) 
 
 
-image_generator = speaking_video.iter_data()
+image_generator = speech_media.iter_data()
 
 word_num = 0
 char_num = 0
@@ -192,7 +193,7 @@ def anime(widget, index, word_list, offset_list, duration_list):
                 speaking_frame_storage.put(image)
             except StopIteration:
                 # print(f"Speaking...")
-                image_generator = speaking_video.iter_data()
+                image_generator = speech_media.iter_data()
                 image = next(image_generator)
                 speaking_frame_storage.put(image)
             # if len(" ".join(word_list))-(len(word_list)-1) > 1:
@@ -200,7 +201,7 @@ def anime(widget, index, word_list, offset_list, duration_list):
             char_num+=1
             widget.after(int(delay*1000), anime, widget, index, word_list, offset_list, duration_list)
         else:
-            if word_num != len(word_list)-1:
+            if word_num != len(word_list)-1: # if there are more words than offset items, word_num will be out of range in the next loop
                 if lang in latin_space_separated_codes:
                     widget.insert(index, " ")
                 widget.see("end")
@@ -227,18 +228,19 @@ def anime(widget, index, word_list, offset_list, duration_list):
 
 def receive_message():
     global lang, VOICE
-    buffer = ""
+    buffer = b""
     while True:
         raw = client_socket.recv(1024)
         if not raw:
             print("raw content", raw)
-        buffer+=raw.decode('utf-8')
-        while "<END_OF_MESSAGE>" in buffer:
-            message, buffer = buffer.split("<END_OF_MESSAGE>", maxsplit=1) # split() clear the texts before "<END_OF_MESSAGE>" in buffer by assigning it to message
+        buffer+=raw
+        while b"<END_OF_MESSAGE>" in buffer:
+            message, buffer = buffer.split(b"<END_OF_MESSAGE>", maxsplit=1) # split() clear the texts before "<END_OF_MESSAGE>" in buffer by assigning it to message
+            message=message.decode("utf-8")
             print("MESSAGE:", message)
             print("BUFFER: ", buffer)
             lang=detect(message).lower()
-            print("LANGAUGE DETECTED:", detect_langs(message))
+            dprint("LANGAUGE DETECTED:", detect_langs(message))
             dprint("CONFIDENCE:", )
             if lang=="ja":
                 VOICE="ja-JP-NanamiNeural"
@@ -260,7 +262,7 @@ def submit(user_entry):
     chat_container.configure(state="disabled")
     chat_container.see("end")
 
-blinking_image_generator = blinking_video.iter_data()
+blinking_image_generator = default_media.iter_data()
 
 def update_gui():
     global blinking_image_generator
@@ -282,7 +284,7 @@ def update_gui():
             image=next(blinking_image_generator)
         except StopIteration:
             # print(f"Eyes drooping... falling asleep...")
-            blinking_image_generator = blinking_video.iter_data()
+            blinking_image_generator = default_media.iter_data()
             image=next(blinking_image_generator)
         frame_image=ImageTk.PhotoImage(Image.fromarray(image))
         insert_image.config(image=frame_image)
@@ -393,17 +395,28 @@ dark_mode=False
 c=BRIGHT
 
 def apply_theme():
-    global dark_mode, c
+    global dark_mode, c, speech_media, default_media, image_generator, blinking_image_generator
     if dark_mode==False:
         dark_mode=True
         c=DARK
         settings.entryconfigure(2, label="Light Mode")
         print(" DARK MODE ACTIVATED!")
+
+        speech_media = imageio.get_reader("./img/führer/speak.mp4")
+        default_media = imageio.get_reader("./img/führer/blink.mp4")
+
     else:
         dark_mode=False
         c=BRIGHT
         settings.entryconfigure(2, label="Dark Mode")
         print("LIGHT MODE ACTIVATED!")
+
+        speech_media = imageio.get_reader("./img/führer/speak2.mp4")
+        default_media = imageio.get_reader("./img/führer/blink2.mp4")
+        
+    image_generator = speech_media.iter_data()
+    blinking_image_generator = default_media.iter_data()
+
     root.configure(bg=c["root"])
     top_frame.configure(bg=c["top_frame"])
     bottom_frame.configure(bg=c["bottom_frame"])

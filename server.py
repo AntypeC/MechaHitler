@@ -77,7 +77,7 @@ def server_program():
                 log_name = f"./logs/{response[:20].replace(" ", "_")}-{datetime.now().strftime("%Y%m%d-%H%M%S")}-chatlog.json"
             with open(log_name, "w") as f:
                 print("New log created:", log_name)
-                json.dump(session_history, f, indent=4)
+                json.dump(session_history, f, indent=4, ensure_ascii=False)
 
             conn.sendall((response+"<END_OF_MESSAGE>").encode())  # send data to the client
 

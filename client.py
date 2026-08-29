@@ -10,7 +10,7 @@ import edge_tts
 import pyaudio
 from io import BytesIO
 from pydub import AudioSegment
-from langdetect import detect
+from langdetect import detect, detect_langs
 import ast
 import json
 
@@ -31,6 +31,12 @@ try:
     client_socket.connect((host, port))
 except ConnectionRefusedError:
     print("No server launched. Try again.")
+
+DEBUG=False
+
+def dprint(TEXT, *args, **kwargs):
+    if DEBUG:
+        print(TEXT, *args, **kwargs)
 
 # tts_engine = pyttsx3.init()
 # voices = tts_engine.getProperty("voices")
@@ -83,6 +89,24 @@ except ConnectionRefusedError:
 VOICE="en-US-AnaNeural"
 lang=""
 # CHUNK_SIZE = 20
+latin_space_separated_codes = [
+    "en",  # English
+    "nl",  # Dutch
+    "id",  # Indonesian
+    "ms",  # Malay
+    "sw",  # Swahili
+    "ia",  # Interlingua
+    "de",  # German
+    "fr",  # French
+    "es",  # Spanish
+    "it",  # Italian
+    "tl",  # Tagalog / Filipino
+    "vi",  # Vietnamese
+    "pt",  # Portuguese
+    "ro",  # Romanian
+    "tr",  # Turkish
+    "pl"   # Polish
+]
 
 def buffer_speech(TEXT) -> None:
     global audio_chunks, audio_stream, pyaudio_instance, word_list
@@ -111,16 +135,15 @@ def buffer_speech(TEXT) -> None:
                 # play_audio_chunks(audio_chunks, audio_stream)
                 # audio_chunks.clear()
     # Play the rest of the audio
-    # print(word_boundary)
-    # print(word_list)
-    # print(offset_list)
-    # print(duration_list)
+    dprint("WORD_LIST:", word_list)
+    dprint("OFFSET_LIST:", offset_list)
+    dprint("DURATION_LIST:", duration_list)
     chat_container.configure(state="normal")
     chat_container.insert(END, "Führer: ", "name")
     chat_container.configure(state="disabled")
     # type_thread = Thread(target=responding, args=(chat_container, "end", word_list, offset_list, duration_list), daemon=False)
     # type_thread.start()
-    if lang=="en":
+    if lang in latin_space_separated_codes:
         word_list = TEXT.split()
     anime(chat_container, "end", word_list, offset_list, duration_list)
     play_audio_chunks(audio_chunks, audio_stream)
@@ -144,6 +167,11 @@ is_fuhrer_speaking = False
 
 def anime(widget, index, word_list, offset_list, duration_list):
     global image_generator, word_num, char_num, start_time, current_word, checked_time, is_fuhrer_speaking
+    dprint(f"""
+    ANIME FUNCTION TRIGGERED FOR WORD_LIST: {word_list}
+    WORD_NUM: {word_num}
+    CHAR_NUM: {char_num}
+    CURRENT_WORD: {current_word}""")
     is_fuhrer_speaking = True
     if checked_time == False:
             start_time = time.perf_counter_ns()
@@ -173,7 +201,8 @@ def anime(widget, index, word_list, offset_list, duration_list):
             widget.after(int(delay*1000), anime, widget, index, word_list, offset_list, duration_list)
         else:
             if word_num != len(word_list)-1:
-                widget.insert(index, " ")
+                if lang in latin_space_separated_codes:
+                    widget.insert(index, " ")
                 widget.see("end")
                 word_num +=1
                 char_num=0
@@ -185,6 +214,11 @@ def anime(widget, index, word_list, offset_list, duration_list):
                 char_num=0
                 start_time = 0
                 current_word = ""
+                dprint(f"""
+    ANIME END FOR WORD_LIST: {word_list}
+    WORD_NUM: {word_num}
+    CHAR_NUM: {char_num}
+    CURRENT_WORD: {current_word}""")
                 checked_time = False
                 is_fuhrer_speaking = False
                 entry.configure(state="normal")
@@ -203,12 +237,16 @@ def receive_message():
             message, buffer = buffer.split("<END_OF_MESSAGE>", maxsplit=1) # split() clear the texts before "<END_OF_MESSAGE>" in buffer by assigning it to message
             print("MESSAGE:", message)
             print("BUFFER: ", buffer)
-            lang=detect(message)
-            print("LANGAUGE DETECTED:", lang)
+            lang=detect(message).lower()
+            print("LANGAUGE DETECTED:", detect_langs(message))
+            dprint("CONFIDENCE:", )
             if lang=="ja":
                 VOICE="ja-JP-NanamiNeural"
             elif lang=="zh-cn":
                 VOICE="zh-CN-XiaoyiNeural"
+            elif lang=="es":
+                VOICE="es-ES-ElviraNeural"
+            print(f"AUTOMATICALLY SWITCHED VOICED TO {VOICE}!")
             buffer_speech(message)
 
 def submit(user_entry):
@@ -251,16 +289,6 @@ def update_gui():
         insert_image.image = frame_image
         insert_image.after(33, update_gui)
 
-root = Tk()
-root.geometry('2000x1200')
-root.title("MechaHitler")
-user_entry = StringVar(value="")
-
-if "Blankenburg_UNZ1A" in font.families():
-    fraktur_font = font.Font(family="Blankenburg_UNZ1A", size=20, slant="italic")
-else:
-    fraktur_font = font.Font(family="Arial", size=16, slant="italic")
-
 def clear_history():
     chat_container.configure(state="normal")
     chat_container.delete("1.0", END)
@@ -272,16 +300,17 @@ def accent():
     if voice_cycle==0:
         VOICE="ja-JP-NanamiNeural"
         roles.entryconfigure(1, label="Accent: (zh-CN)")
-        print("Switched voice to ja-JP-NanamiNeural!")
     elif voice_cycle==1:
         VOICE="zh-CN-XiaoyiNeural"
+        roles.entryconfigure(1, label="Accent: (es-ES)")
+    elif voice_cycle==2:
+        VOICE="es-ES-ElviraNeural"
         roles.entryconfigure(1, label="Accent: (en-US)")
-        print("Switched voice to zh-CN-XiaoyiNeural!")
     else:
         VOICE = "en-US-AnaNeural"
         roles.entryconfigure(1, label="Accent: (ja-JP)")
-        print("Switched voice to en-US-AnaNeural!")
-    voice_cycle = (voice_cycle+1)%3
+    print(f"VOICE SWITCHED TO {VOICE}!")
+    voice_cycle = (voice_cycle+1)%4
 
 def character():
     pass
@@ -325,6 +354,8 @@ BRIGHT = {
     "entry_bg":        "#FFFFFF",
     "entry_fg":        "#111111",
     "entry_insert":    "#8B1A1A",
+    "entry_disabled_bg": "#E6E6E6",
+    "entry_disabled_fg": "#8A8A8A",
     "button_bg":       "#E0E0E0",
     "button_fg":       "#111111",
     "button_active":   "#C9C9C9",
@@ -348,6 +379,8 @@ DARK = {
     "entry_bg":        "#2C323C",
     "entry_fg":        "#F3EADF",
     "entry_insert":    "#C94A3A",
+    "entry_disabled_bg": "#1A1E24",
+    "entry_disabled_fg": "#7A7368",
     "button_bg":       "#3A414C",
     "button_fg":       "#EDE4D4",
     "button_active":   "#B33A2C",
@@ -357,19 +390,20 @@ DARK = {
 }
 
 dark_mode=False
+c=BRIGHT
 
 def apply_theme():
-    global dark_mode
+    global dark_mode, c
     if dark_mode==False:
         dark_mode=True
+        c=DARK
         settings.entryconfigure(2, label="Light Mode")
         print(" DARK MODE ACTIVATED!")
-        c=DARK
     else:
         dark_mode=False
+        c=BRIGHT
         settings.entryconfigure(2, label="Dark Mode")
         print("LIGHT MODE ACTIVATED!")
-        c=BRIGHT
     root.configure(bg=c["root"])
     top_frame.configure(bg=c["top_frame"])
     bottom_frame.configure(bg=c["bottom_frame"])
@@ -397,12 +431,12 @@ def apply_theme():
 
     entry.configure(
         bg=c["entry_bg"],
-        fg=c["entry_fg"],
+        # fg=c["entry_fg"],
         insertbackground=c["entry_insert"],
         highlightbackground=c["accent"],
         highlightcolor=c["accent"],
-        disabledbackground=c["entry_bg"],
-        disabledforeground=c["entry_insert"]
+        disabledbackground=c["entry_disabled_bg"],
+        disabledforeground=c["entry_disabled_fg"]
     )
 
     send_button.configure(
@@ -413,8 +447,25 @@ def apply_theme():
         highlightbackground=c["accent"],
     )
 
+default_text="Ask Führer"
+
+def handle_focus_in(event=None):
+    if entry.get()==default_text:
+        entry.configure(fg=c["entry_fg"])
+        entry.delete(0, END)
+
+def handle_focus_out(event=None):
+    if entry.get()=="":
+        entry.configure(fg=c["entry_disabled_fg"])
+        entry.insert(0, default_text)
+
 def build_gui():
-    global top_frame, bottom_frame, menubar, root, settings, roles, name, insert_image, chat_container, entry, send_button
+    global top_frame, bottom_frame, menubar, root, settings, roles, name, insert_image, chat_container, user_entry, entry, send_button
+
+    if "Blankenburg_UNZ1A" in font.families():
+        fraktur_font = font.Font(family="Blankenburg_UNZ1A", size=20, slant="italic")
+    else:
+        fraktur_font = font.Font(family="Arial", size=16, slant="italic")
 
     top_frame = Frame(root)
     top_frame.pack(fill="both", expand=True)
@@ -451,8 +502,12 @@ def build_gui():
     chat_container.configure(state="disabled")
     chat_container.pack(side="left", fill="both", expand=True, padx=10, pady=(5, 5))
 
+    user_entry = StringVar(value=default_text)
     entry = Entry(bottom_frame, font=("serif", 16), textvariable=user_entry)
     entry.pack(side=LEFT, fill="x", expand=True, padx=10, pady=(10, 5))
+    entry.configure(fg=c["entry_disabled_fg"])
+    entry.bind("<FocusIn>", handle_focus_in)
+    entry.bind("<FocusOut>", handle_focus_out)
 
     send_button = Button(bottom_frame, command=lambda: submit(user_entry), text="Send", width=10)
     send_button.pack(side=RIGHT, padx=10, pady=(10, 5))
@@ -462,15 +517,30 @@ def build_gui():
 
     root.bind("<Return>", lambda event: submit(user_entry))
 
-    apply_theme()
     update_gui()
     # blinking_thread = Thread(target=update_frame(), daemon=True)
     # blinking_thread.start()
 
+alpha_value = 1.0
+
 if __name__ == "__main__":
+    root = Tk()
+    root.geometry('2000x1200')
+    root.title("MechaHitler")
     build_gui()
+
     if len(sys.argv)>1:
-        if sys.argv[1]=="light":
+        if "dark" in sys.argv[1:]:
             apply_theme()
+        if "debug" in sys.argv[1:]:
+            print("DEBUG MODE ACTIVATED!")
+            DEBUG=True
+        if "alpha" in sys.argv[1:]:
+            i=sys.argv.index("alpha")
+            alpha_value=float(sys.argv[i+1])
+            print(f"ALPHA VALUE SET TO {alpha_value}")
+
+    root.wait_visibility(root)
+    root.attributes("-alpha", alpha_value)
 
     root.mainloop()

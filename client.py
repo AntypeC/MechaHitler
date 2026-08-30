@@ -10,9 +10,11 @@ import edge_tts
 import pyaudio
 from io import BytesIO
 from pydub import AudioSegment
-from langdetect import detect, detect_langs
+from langdetect import detect
+from langdetect.lang_detect_exception import LangDetectException
 import ast
 import json
+import unicodedata
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 img_path = os.path.join(script_dir, "./img/führer/anime_girl.jpg")
@@ -89,24 +91,6 @@ def dprint(TEXT, *args, **kwargs):
 VOICE="en-US-AnaNeural"
 lang=""
 # CHUNK_SIZE = 20
-latin_space_separated_codes = [
-    "en",  # English
-    "nl",  # Dutch
-    "id",  # Indonesian
-    "ms",  # Malay
-    "sw",  # Swahili
-    "ia",  # Interlingua
-    "de",  # German
-    "fr",  # French
-    "es",  # Spanish
-    "it",  # Italian
-    "tl",  # Tagalog / Filipino
-    "vi",  # Vietnamese
-    "pt",  # Portuguese
-    "ro",  # Romanian
-    "tr",  # Turkish
-    "pl"   # Polish
-]
 
 def buffer_speech(TEXT) -> None:
     global audio_chunks, audio_stream, pyaudio_instance, word_list
@@ -143,9 +127,30 @@ def buffer_speech(TEXT) -> None:
     chat_container.configure(state="disabled")
     # type_thread = Thread(target=responding, args=(chat_container, "end", word_list, offset_list, duration_list), daemon=False)
     # type_thread.start()
-    if lang in latin_space_separated_codes:
-        dprint(f"WORD_LIST PART OF {latin_space_separated_codes}")
-        word_list = TEXT.split()
+    # for segment_index in range(len(word_list)): # assumes words_lists are broken up by special characters like . and ,
+    #     if word_list[segment_index] == "":
+    #         continue
+    #     first_character_index = TEXT.index(word_list[segment_index])
+    #     end = first_character_index+len(word_list[segment_index])
+    #     if end == len(TEXT):
+    #         print("break")
+    #         continue
+    #     word_list[segment_index] += TEXT[end]
+    # WARNING： BELOW IS A GENIUS FOR LOOP THAT AUTOMATICALLY ADD WHATEVER PUNCTUATION，SPACES IN BETWEEN THE SEGMENTS OF WORD_LIST INTO THE END OF EACH SEGMENTS
+    search_from = 0
+    for segment_index in range(len(word_list)):
+        if word_list[segment_index] == "":
+            continue
+        start = TEXT.index(word_list[segment_index], search_from)
+        end = start + len(word_list[segment_index])
+        if segment_index < (len(word_list)-1):
+            new_start = TEXT.index(word_list[segment_index+1], end) # whatever exists in the gap between this segment and next segment gets added to the end of this segment
+            word_list[segment_index] += TEXT[end:new_start]
+        else:
+            word_list[segment_index] += TEXT[end:]
+        search_from = end # so next search_from cap index from referencing similar segments from before in the next loop
+            
+    dprint(f"UPDATED WORD_LIST:", word_list)
     anime(chat_container, "end", word_list, offset_list, duration_list)
     play_audio_chunks(audio_chunks, audio_stream)
     audio_chunks.clear()
@@ -202,8 +207,6 @@ def anime(widget, index, word_list, offset_list, duration_list):
             widget.after(int(delay*1000), anime, widget, index, word_list, offset_list, duration_list)
         else:
             if word_num != len(word_list)-1: # if there are more words than offset items, word_num will be out of range in the next loop
-                if lang in latin_space_separated_codes:
-                    widget.insert(index, " ")
                 widget.see("end")
                 word_num +=1
                 char_num=0
@@ -239,9 +242,10 @@ def receive_message():
             message=message.decode("utf-8")
             print("MESSAGE:", message)
             print("BUFFER: ", buffer)
-            lang=detect(message).lower()
-            dprint("LANGAUGE DETECTED:", detect_langs(message))
-            dprint("CONFIDENCE:", )
+            try:
+                lang=detect(message).lower()
+            except LangDetectException:
+                print("UNKNOWN LANGUAGE DETECTED!")
             if lang=="ja":
                 VOICE="ja-JP-NanamiNeural"
             elif lang=="zh-cn":

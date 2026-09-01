@@ -25,14 +25,17 @@ default_media = imageio.get_reader("./img/führer/blink2.mp4")
 speaking_frame_storage = queue.Queue(maxsize=20) # get 10 frames at most, pause update_frame() if full
 blinking_frame_storage = queue.Queue(maxsize=20)
 
-host = '127.0.0.1'
+host = "0.0.0.0"
 port = 5000
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 try:
     client_socket.connect((host, port))
-except ConnectionRefusedError:
+    print("CONNECTED", client_socket.getpeername(), flush=True)
+except Exception as e:
     print("No server launched. Try again.")
+    print("CONNECTION FAILED:", repr(e), flush=True)
+    raise
 
 DEBUG=False
 
@@ -236,6 +239,7 @@ def receive_message():
         raw = client_socket.recv(1024)
         if not raw:
             print("raw content", raw)
+            continue
         buffer+=raw
         while b"<END_OF_MESSAGE>" in buffer:
             message, buffer = buffer.split(b"<END_OF_MESSAGE>", maxsplit=1) # split() clear the texts before "<END_OF_MESSAGE>" in buffer by assigning it to message
@@ -448,7 +452,7 @@ def apply_theme():
 
     entry.configure(
         bg=c["entry_bg"],
-        # fg=c["entry_fg"],
+        fg=c["entry_fg"],
         insertbackground=c["entry_insert"],
         highlightbackground=c["accent"],
         highlightcolor=c["accent"],
